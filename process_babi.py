@@ -54,7 +54,9 @@ def main(in_dataset_folder, in_task_id, in_output_folder):
 
     if not path.exists(in_output_folder):
         makedirs(in_output_folder)
-    for dataset_name, task in zip(['train', 'dev', 'test'], [task_train, task_dev, task_test]):
+    dataset_names = ['train', 'dev', 'test']
+    datasets = [task_train, task_dev, task_test]
+    for dataset_name, task in zip(dataset_names, datasets):
         encoder_input, decoder_input = preprocess_for_seq2seq(task)
         enc_filename = path.join(in_output_folder, dataset_name + '.enc')
         with getwriter('utf-8')(open(enc_filename, 'w')) as encoder_out:
