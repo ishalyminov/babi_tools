@@ -34,10 +34,12 @@ def preprocess_for_seq2seq(in_task_dialogs):
     encoder_buffer = deque([], maxlen=CONFIG['encoder_context_size'])
 
     for dialog in in_task_dialogs:
+        encoder_buffer.clear()
         for turn in dialog:
             user_turn, system_turn = turn['user'], turn['system']
             encoder_buffer.append(user_turn)
             encoder_input.append(' '.join(encoder_buffer))
+            encoder_buffer.append(system_turn)
             decoder_input.append(system_turn)
     return encoder_input, decoder_input
 
@@ -70,7 +72,9 @@ def main(in_dataset_folder, in_task_id, in_output_folder):
 
 if __name__ == '__main__':
     if len(argv) < 4:
-        print 'Usage: process_babi.py <dataset folder> <task id> <output_folder>'
+        print 'Usage: {} <dataset folder> <task id> <output_folder>'.format(
+            argv[0]
+        )
         exit()
     dataset_folder, task_id, output_folder = argv[1:]
     main(dataset_folder, task_id, output_folder)
