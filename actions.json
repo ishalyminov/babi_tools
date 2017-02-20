@@ -1,0 +1,23 @@
+{
+  "hesitate": {
+    "templates": ["uhm", "the the the", "like", "you know", "well"],
+    "weight": 2.0
+  },
+  "interrupt": {
+    "templates": [],
+    "weight": 0.0
+  },
+  "correct": {
+    "templates": [
+      "sorry",
+      "I mean",
+      "oh no",
+      "no I meant"
+    ],
+    "weight": 1.0
+  },
+  "NULL": {
+    "templates": [],
+    "weight": 17.0
+  }
+}
