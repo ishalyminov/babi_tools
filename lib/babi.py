@@ -6,6 +6,8 @@ from os import path
 
 from collections import defaultdict
 
+TASK_ID = 'task1-API-calls'
+
 
 def read_task(in_file_name):
     result = []
