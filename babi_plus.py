@@ -1,59 +1,116 @@
 import json
 import sys
+from operator import itemgetter
 from os import path, makedirs
 import random
 
 import numpy as np
+import nltk
 
 from lib.babi import load_dataset, extract_slot_values
 
-ACTIONS_FILE = 'actions.json'
-with open(ACTIONS_FILE) as actions_in:
-    ACTIONS = json.load(actions_in)
-
-ACTION_WEIGHTS = [ACTIONS[action]['weight'] for action in ACTIONS]
-ACTION_PROBABILITIES = [
-    weight / sum(ACTION_WEIGHTS)
-    for weight in ACTION_WEIGHTS
-]
-
 random.seed(273)
 
+CONFIG_FILE = 'babi_plus.json'
+with open(CONFIG_FILE) as actions_in:
+    CONFIG = json.load(actions_in)
 
-def perform_action(in_action, in_word, in_slot_values):
-    result = [in_word]
+ACTIONS = CONFIG['actions']
+TAGGER = nltk.UnigramTagger(nltk.corpus.brown.tagged_sents(categories='news'))
+
+
+def perform_action(in_action, in_tagged_tokens, in_token_index, in_slot_values):
+    word, pos_tag = in_tagged_tokens[in_token_index]
     templates = ACTIONS[in_action]['templates']
     action_outcome = None if not len(templates) else np.random.choice(templates)
     if in_action == 'correct':
-        if in_word in in_slot_values:
+        if word in in_slot_values:
             incorrect_value = np.random.choice([
                 value
                 for value in in_slot_values
-                if value != in_word
+                if value != word
             ])
-            result = [incorrect_value, action_outcome] + result
+            in_tagged_tokens[in_token_index][0] = ' '.join(
+                [incorrect_value, action_outcome, word]
+            )
     if in_action == 'hesitate':
-        result = [action_outcome] + result
-    return result
+        in_tagged_tokens[in_token_index][0] = ' '.join([action_outcome, word])
+    if in_action == 'restart':
+        in_tagged_tokens[in_token_index][0] = ' '.join(
+            [word] + [action_outcome] + map(itemgetter(0), in_tagged_tokens[:in_token_index + 1])
+        )
+
+
+def apply_replacements(in_utterance):
+    REPLACEMENTS = [
+        ('are looking', 'are you looking')
+    ]
+    for pattern, replacement in REPLACEMENTS:
+        in_utterance = in_utterance.replace(pattern, replacement)
+    return in_utterance
+
+
+def compute_probability_distribution(in_actions):
+    weights = [ACTIONS[action]['weight'] for action in in_actions]
+    probabilities = [weight / sum(weights) for weight in weights]
+    return probabilities
+
+
+def sample_transformations(in_utterance_length):
+    transformed_token_indices = [
+        np.random.choice(range(in_utterance_length))
+        for _ in xrange(CONFIG['max_modifications_per_utterance'])
+    ]
+    actions = []
+    available_actions = set(ACTIONS.keys())
+    for _ in xrange(CONFIG['max_modifications_per_utterance']):
+        action_list = list(available_actions)
+        action_probabilities = compute_probability_distribution(action_list)
+        action = np.random.choice(action_list, p=action_probabilities)
+        actions.append(action)
+        available_actions.remove(action)
+    return [
+        (index, action)
+        for index, action in zip(transformed_token_indices, actions)
+    ]
 
 
 def augment_dialogue(in_dialogue, in_slot_values):
     result = []
-    for utterance in in_dialogue:
-        augmented_utterance = []
-        for word in utterance['text'].split():
-            action = np.random.choice(list(ACTIONS.keys()), p=ACTION_PROBABILITIES)
-            augmented_utterance += perform_action(
+    dialogue_name, dialogue = in_dialogue
+    for utterance_index, utterance in enumerate(dialogue):
+        utterance['text'] = apply_replacements(utterance['text'])
+        if utterance_index % 2 == 1:
+            result.append(utterance['text'])
+            continue
+        tagged_tokens = map(list, TAGGER.tag(utterance['text'].split()))
+        transformations = sample_transformations(len(tagged_tokens))
+        for token_index, action in transformations[::-1]:
+            word, tag = tagged_tokens[token_index]
+            perform_action(
                 action,
-                word,
-                reduce(lambda x, y: x + y, [values_set for values_set in in_slot_values if word in values_set], [])
+                tagged_tokens,
+                token_index,
+                reduce(
+                    lambda x, y: x + y,
+                    [
+                        values_set
+                        for values_set in in_slot_values
+                        if word in values_set
+                    ],
+                    []
+                )
             )
-        result.append(' '.join(augmented_utterance))
+        result.append(' '.join(map(itemgetter(0), tagged_tokens)))
     return result
 
 
 def make_babi_plus(in_src_root):
-    babi = reduce(lambda x, y: x + y, load_dataset(in_src_root, 'task1-API-calls'), [])
+    babi = reduce(
+        lambda x, y: x + y,
+        load_dataset(in_src_root, 'task1-API-calls'),
+        []
+    )
     slots_map = extract_slot_values(babi)
     babi_plus = []
     for dialogue in babi:
