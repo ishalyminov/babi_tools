@@ -46,13 +46,17 @@ def preprocess_for_seq2seq(in_task_dialogs, in_config):
     return encoder_input, decoder_input
 
 
-def load_dataset(in_root, in_task_id):
+def get_files_list(in_root, in_task_id):
     result = []
     file_prefix = path.join(in_root, 'dialog-babi-{}'.format(in_task_id))
     for suffix in DATASET_ORDERING:
         task_file = '{}-{}.txt'.format(file_prefix, suffix)
-        result.append(read_task(task_file))
+        result.append(task_file)
     return result
+
+
+def load_dataset(in_root, in_task_id):
+    return map(read_task, get_files_list(in_root, in_task_id))
 
 
 # only returns filenames in a sorted order

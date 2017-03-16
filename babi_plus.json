@@ -2,7 +2,7 @@
   "max_modifications_per_utterance": 3,
   "actions": {
     "hesitate": {
-      "templates": ["uhm", "like", "you know", "well"],
+      "templates": ["uhm $token", "like $token", "you know $token", "well $token"],
       "weight": 3.0
     },
     "interrupt": {
@@ -11,27 +11,35 @@
     },
     "correct": {
       "templates": [
-        "sorry",
-        "I mean",
-        "oh no",
-        "no I meant"
+        "$incorrect_value sorry $correct_value",
+        "$incorrect_value uhm i mean $correct_value",
+        "$incorrect_value oh no $correct_value",
+        "$incorrect_value no i mean $correct_value"
       ],
       "weight": 5.0
     },
+    "multiturn_correct": {
+      "templates": [
+        "oh I am really sorry $correct_value",
+        "sorry please can you change it to $correct_value",
+        "oh no no no not $incorrect_value but $correct_value please"
+      ],
+      "weight": 7.0
+    },
     "selfcheck": {
       "templates": [
-        "let me check",
-        "let me see",
-        "give me a moment",
-        "one second",
-        "please hold on let me check"
+        "let me check $token",
+        "let me see $token",
+        "give me a moment $token",
+        "one second $token",
+        "please hold on let me check $token"
       ],
       "weight": 5.0
     },
     "restart": {
       "templates": [
-        "sorry",
-        "uhm"
+        "$token sorry yeah $utterance_from_beginning",
+        "$token uhm yeah $utterance_from_beginning"
       ],
       "weight": 2.0
     },
