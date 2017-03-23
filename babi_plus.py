@@ -5,18 +5,15 @@ import random
 from collections import defaultdict
 
 import numpy as np
-import nltk
 
 from lib.babi import extract_slot_values, get_files_list, read_task
 
 random.seed(273)
 
 CONFIG_FILE = 'babi_plus.json'
-with open(CONFIG_FILE) as actions_in:
-    CONFIG = json.load(actions_in)
+CONFIG = None
 
-ACTIONS = CONFIG['actions']
-TAGGER = nltk.UnigramTagger(nltk.corpus.brown.tagged_sents(categories='news'))
+ACTION_LIST = None
 
 
 def apply_replacements(in_template, in_slots_map):
@@ -29,7 +26,7 @@ def apply_replacements(in_template, in_slots_map):
 def perform_action(in_action, in_dialog, in_token_coordinates, in_slot_values):
     utterance_index, token_index = in_token_coordinates
     word = in_dialog[utterance_index]['text'][token_index]
-    templates = ACTIONS[in_action]['templates']
+    templates = CONFIG['action_templates'][in_action]
     action_outcome = None if not len(templates) else np.random.choice(templates)
     if in_action == 'correct':
         if word in in_slot_values:
@@ -94,35 +91,70 @@ def fix_data(in_utterance):
     return in_utterance
 
 
-def compute_probability_distribution(in_actions):
-    weights = [ACTIONS[action]['weight'] for action in in_actions]
-    probabilities = [weight / sum(weights) for weight in weights]
-    return probabilities
+def calculate_action_probabilities(
+    in_action_weights,
+    in_action_weight_mask,
+    in_action_limits
+):
+    limits = dict(in_action_limits)
+    for action in limits:
+        limits[action] = float(0.0 < limits[action])
+    action_weights_masked = defaultdict(lambda: {})
+    # action weight masks differ
+    # for the cases of background words and slot values
+    for case, mask_map in in_action_weight_mask.iteritems():
+        sum_masked_weight = 0.0
+        for action, mask_value in mask_map.iteritems():
+            masked_weight = in_action_weights[action] * mask_value * limits[action]
+            if action != 'NULL':
+                masked_weight *= limits['GLOBAL']
+            action_weights_masked[case][action] = masked_weight
+            sum_masked_weight += masked_weight
+        for action in action_weights_masked[case]:
+            action_weights_masked[case][action] /= sum_masked_weight
+        assert abs(sum(action_weights_masked[case].values()) - 1.0) < 1e-7
+    return {
+        case: [weight_map[action] for action in ACTION_LIST]
+        for case, weight_map in action_weights_masked.iteritems()
+    }
 
 
-def sample_transformations(in_utterance_length):
-    token_indices = set(range(in_utterance_length))
-    token_indices_to_transform = []
-    for _ in xrange(min(CONFIG['max_modifications_per_utterance'], in_utterance_length)):
-        index = np.random.choice(list(token_indices))
-        token_indices_to_transform.append(index)
-        token_indices.remove(index)
-    token_indices_to_transform = sorted(token_indices_to_transform)
-    actions = []
-    available_actions = set(ACTIONS.keys())
-    for _ in xrange(CONFIG['max_modifications_per_utterance']):
-        action_list = list(available_actions)
-        action_probabilities = compute_probability_distribution(action_list)
-        action = np.random.choice(action_list, p=action_probabilities)
-        actions.append(action)
-        available_actions.remove(action)
-    return [
-        (index, action)
-        for index, action in zip(token_indices_to_transform, actions)
-    ]
+def init():
+    global CONFIG, ACTION_LIST, ACTION_PROBABILITIES
+    with open(CONFIG_FILE) as actions_in:
+        CONFIG = json.load(actions_in)
+    ACTION_LIST = sorted(CONFIG['action_templates'].keys())
+
+
+def sample_transformations(in_utterance, in_slot_values):
+    action_limits = dict(CONFIG['action_limits'])
+
+    token_types = map(
+        lambda x: 'slot_value' if x in in_slot_values else 'background_word',
+        in_utterance
+    )
+    per_token_actions = []
+    for token_type in token_types:
+        action_probs = calculate_action_probabilities(
+            CONFIG['action_weights'],
+            CONFIG['action_weight_mask'],
+            action_limits
+        )
+        action = np.random.choice(ACTION_LIST, p=action_probs[token_type])
+        per_token_actions.append(action)
+        action_limits[action] -= 1
+        action_limits['GLOBAL'] -= 1 * int(action != 'NULL')
+
+    count_map = defaultdict(lambda: 0)
+    for action in per_token_actions:
+        count_map[action] += 1
+    for action, count in count_map.iteritems():
+        assert count <= CONFIG['action_limits'][action]
+    return per_token_actions
 
 
 def augment_dialogue(in_dialogue, in_slot_values):
+    slot_values_flat = reduce(lambda x, y: x + list(y), in_slot_values, [])
     dialogue_name, dialogue = in_dialogue
     tokenized_dialogue = []
     for utterance in dialogue:
@@ -134,15 +166,19 @@ def augment_dialogue(in_dialogue, in_slot_values):
         utterance = tokenized_dialogue[utterance_index]
         if utterance_index % 2 == 1 or utterance['text'] == '<SILENCE>':
             continue
-        transformations = sample_transformations(len(utterance['text']))
-        for token_index, action in transformations[::-1]:
+        transformations = sample_transformations(
+            utterance['text'],
+            slot_values_flat
+        )
+        for reverse_token_index, action in enumerate(transformations[::-1]):
+            token_index = len(transformations) - reverse_token_index - 1
             perform_action(
                 action,
                 tokenized_dialogue,
                 [utterance_index, token_index],
                 set(
                     reduce(
-                        lambda x, y: x + y,
+                        lambda x, y: x + list(y),
                         [
                             values_set
                             for values_set in in_slot_values
@@ -222,6 +258,7 @@ if __name__ == '__main__':
             path.basename(__file__)
         )
         exit()
+    init()
     source, destination, output_format = sys.argv[1:4]
     babi_plus_dialogues = plus_dataset(source)
     save_function = locals()['save_' + output_format]

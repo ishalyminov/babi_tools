@@ -1,52 +1,63 @@
 {
-  "max_modifications_per_utterance": 3,
-  "actions": {
-    "hesitate": {
-      "templates": ["uhm $token", "like $token", "you know $token", "well $token"],
-      "weight": 3.0
+  "action_limits": {
+    "hesitate": 3,
+    "correct": 3,
+    "multiturn_correct": 1,
+    "restart": 1,
+    "selfcheck": 3,
+    "NULL": 999999,
+    "GLOBAL": 3
+  },
+  "action_weights": {
+    "hesitate": 10,
+    "correct": 20,
+    "multiturn_correct": 0,
+    "restart": 5,
+    "selfcheck": 5,
+    "NULL": 30
+  },
+  "action_weight_mask": {
+    "background_word": {
+      "hesitate": 0,
+      "correct": 0,
+      "multiturn_correct": 0,
+      "restart": 1,
+      "selfcheck": 1,
+      "NULL": 1
     },
-    "interrupt": {
-      "templates": [],
-      "weight": 0.0
-    },
-    "correct": {
-      "templates": [
-        "$incorrect_value sorry $correct_value",
-        "$incorrect_value uhm i mean $correct_value",
-        "$incorrect_value oh no $correct_value",
-        "$incorrect_value no i mean $correct_value"
-      ],
-      "weight": 5.0
-    },
-    "multiturn_correct": {
-      "templates": [
-        "oh I am really sorry $correct_value",
-        "sorry please can you change it to $correct_value",
-        "oh no no no not $incorrect_value but $correct_value please"
-      ],
-      "weight": 7.0
-    },
-    "selfcheck": {
-      "templates": [
-        "let me check $token",
-        "let me see $token",
-        "give me a moment $token",
-        "one second $token",
-        "please hold on let me check $token"
-      ],
-      "weight": 5.0
-    },
-    "restart": {
-      "templates": [
+    "slot_value": {
+      "hesitate": 1,
+      "correct": 1,
+      "multiturn_correct": 1,
+      "restart": 1,
+      "selfcheck": 1,
+      "NULL": 1
+    }
+  },
+  "action_templates": {
+    "hesitate": ["uhm $token", "like $token", "you know $token", "well $token"],
+    "correct": [
+      "$incorrect_value sorry $correct_value",
+      "$incorrect_value uhm i mean $correct_value",
+      "$incorrect_value oh no $correct_value",
+      "$incorrect_value no i mean $correct_value"
+    ],
+    "multiturn_correct": [
+      "oh I am really sorry $correct_value",
+      "sorry please can you change it to $correct_value",
+      "oh no no no not $incorrect_value but $correct_value please"
+    ],
+    "selfcheck": [
+      "let me check $token",
+      "let me see $token",
+      "give me a moment $token",
+      "one second $token",
+      "please hold on let me check $token"
+    ],
+    "restart": [
         "$token sorry yeah $utterance_from_beginning",
         "$token uhm yeah $utterance_from_beginning"
       ],
-      "weight": 2.0
-    },
-
-    "NULL": {
-      "templates": [],
-      "weight": 17.0
-    }
+    "NULL": []
   }
 }
