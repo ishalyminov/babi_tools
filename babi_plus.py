@@ -9,11 +9,13 @@ import numpy as np
 from lib.babi import extract_slot_values, get_files_list, read_task
 
 random.seed(273)
+np.random.seed(273)
 
 CONFIG_FILE = 'babi_plus.json'
 CONFIG = None
 
 ACTION_LIST = None
+STATS = defaultdict(lambda: 0)
 
 
 def apply_replacements(in_template, in_slots_map):
@@ -162,15 +164,25 @@ def augment_dialogue(in_dialogue, in_slot_values):
         tokenized_utterance['text'] = fix_data(utterance['text']).split()
         tokenized_dialogue.append(tokenized_utterance)
 
+    dialogue_modified = False
+    utterances_modified = 0
+    action_stats = defaultdict(lambda: 0)
     for utterance_index in xrange(len(tokenized_dialogue) - 1, -1, -1):
         utterance = tokenized_dialogue[utterance_index]
-        if utterance_index % 2 == 1 or utterance['text'] == '<SILENCE>':
+        if utterance_index % 2 == 1 or utterance['text'] == [u'<SILENCE>']:
             continue
         transformations = sample_transformations(
             utterance['text'],
             slot_values_flat
         )
+        if set(transformations) != set(['NULL']):
+            utterances_modified += 1
+        for transformation in transformations:
+            action_stats[transformation] += 1
+
         for reverse_token_index, action in enumerate(transformations[::-1]):
+            if action != 'NULL':
+                dialogue_modified = True
             token_index = len(transformations) - reverse_token_index - 1
             perform_action(
                 action,
@@ -189,6 +201,13 @@ def augment_dialogue(in_dialogue, in_slot_values):
             )
     for utterance in tokenized_dialogue:
         utterance['text'] = ' '.join(utterance['text'])
+
+    global STATS
+    STATS['dialogues_modified'] += int(dialogue_modified)
+    STATS['utterances_modified'] += utterances_modified
+    for action, count in action_stats.iteritems():
+        STATS[action] += count
+
     return tokenized_dialogue
 
 
@@ -241,6 +260,12 @@ def save_babble(in_dialogues, in_dst_root):
             ])
 
 
+def print_stats():
+    print 'Data modification statistics:'
+    for key, value in STATS.iteritems():
+        print '{}\t{}'.format(key, value)
+
+
 def save_babi(in_dialogues, in_dst_root):
     if not path.exists(in_dst_root):
         makedirs(in_dst_root)
@@ -263,3 +288,4 @@ if __name__ == '__main__':
     babi_plus_dialogues = plus_dataset(source)
     save_function = locals()['save_' + output_format]
     save_function(babi_plus_dialogues, destination)
+    print_stats()

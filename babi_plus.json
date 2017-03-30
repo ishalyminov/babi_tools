@@ -9,10 +9,10 @@
     "GLOBAL": 3
   },
   "action_weights": {
-    "hesitate": 10,
+    "hesitate": 5,
     "correct": 20,
     "multiturn_correct": 0,
-    "restart": 5,
+    "restart": 10,
     "selfcheck": 5,
     "NULL": 30
   },
