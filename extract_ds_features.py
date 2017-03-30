@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import sys
@@ -6,9 +7,9 @@ import shutil
 from codecs import getreader
 from multiprocessing import Pool
 
-BABBLE_BINARY_NAME = 'babble.jar'
-WORKERS_NUMBER = 4
-TMP_FOLDER = '.babi_tmp'
+CONFIG_FILE = 'extract_ds_features.json'
+with open(CONFIG_FILE) as config_in:
+    CONFIG = json.load(config_in)
 
 
 def process_single_file(in_params):
@@ -16,7 +17,7 @@ def process_single_file(in_params):
     subprocess.call([
         'java',
         '-jar',
-        BABBLE_BINARY_NAME,
+        CONFIG['babble_binary_name'],
         in_src_file, in_dst_file
     ])
 
@@ -34,14 +35,14 @@ def load_babi_dialogues(in_file_name):
 
 def make_tasks(in_dialogues, in_dst_root, dataset_filename):
     dialogues_per_worker = max(
-        len(in_dialogues) / WORKERS_NUMBER,
-        len(in_dialogues) % WORKERS_NUMBER
+        len(in_dialogues) / CONFIG['workers_number'],
+        len(in_dialogues) % CONFIG['workers_number']
     )
     tasks = []
     for start_dialogue_index in xrange(0, len(in_dialogues), dialogues_per_worker):
         worker_dialogues = in_dialogues[start_dialogue_index:start_dialogue_index + dialogues_per_worker]
         worker_filename = dataset_filename + str(start_dialogue_index)
-        with open(os.path.join(TMP_FOLDER, worker_filename), 'w') as task_out:
+        with open(os.path.join(CONFIG['tmp_folder'], worker_filename), 'w') as task_out:
             print >>task_out, '\n\n'.join([
                 '\n'.join(dialogue_lines)
                 for dialogue_lines in worker_dialogues
@@ -49,17 +50,17 @@ def make_tasks(in_dialogues, in_dst_root, dataset_filename):
             print >>task_out, ''
         start_dialogue_index += dialogues_per_worker
         tasks.append((
-            os.path.join(TMP_FOLDER, worker_filename),
+            os.path.join(CONFIG['tmp_folder'], worker_filename),
             os.path.join(in_dst_root, dataset_filename)
         ))
     return tasks
 
 
 def process_corpus(in_src_root, in_dst_root):
-    if not os.path.exists(TMP_FOLDER):
-        os.makedirs(TMP_FOLDER)
+    if not os.path.exists(CONFIG['tmp_folder']):
+        os.makedirs(CONFIG['tmp_folder'])
 
-    workers_pool = Pool(processes=WORKERS_NUMBER)
+    workers_pool = Pool(processes=CONFIG['workers_number'])
     for filename in os.listdir(in_src_root):
         if 'task1-API-calls' not in filename:
             continue
@@ -67,7 +68,7 @@ def process_corpus(in_src_root, in_dst_root):
         tasks = make_tasks(dialogues, in_dst_root, filename)
         results = workers_pool.map(process_single_file, tasks)
 
-    shutil.rmtree(TMP_FOLDER)
+    shutil.rmtree(CONFIG['tmp_folder'])
 
 
 if __name__ == '__main__':

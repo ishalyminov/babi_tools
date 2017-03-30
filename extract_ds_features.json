@@ -1,0 +1,5 @@
+{
+  'workers_number': 64,
+  'tmp_folder': '.babi_tmp',
+  'babble_binary_name': 'babble.jar'
+}
