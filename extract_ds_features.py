@@ -1,11 +1,14 @@
 import json
 import os
+import re
 import subprocess
 import sys
 
 import shutil
 from codecs import getreader
+from collections import defaultdict
 from multiprocessing import Pool
+from operator import itemgetter
 
 CONFIG_FILE = 'extract_ds_features.json'
 with open(CONFIG_FILE) as config_in:
@@ -68,7 +71,20 @@ def process_corpus(in_src_root, in_dst_root):
         tasks = make_tasks(dialogues, in_dst_root, filename)
         results = workers_pool.map(process_single_file, tasks)
 
+    group_partial_results(in_dst_root)
     shutil.rmtree(CONFIG['tmp_folder'])
+
+
+def group_partial_results(in_root):
+    files_map = defaultdict(lambda: [])
+    for filename in os.listdir(in_root):
+        dataset, ext, start_dialogue = filename.partition('.txt')
+        files_map[dataset + ext].append((int(start_dialogue), filename))
+    for dataset, files in files_map.iteritems():
+        with open(os.path.join(in_root, dataset), 'w') as dataset_out:
+            for filename in sorted(files, key=itemgetter(0)):
+                with open(os.path.join(in_root, filename)) as dataset_in:
+                    print >>dataset_out, dataset_in.read()
 
 
 if __name__ == '__main__':
