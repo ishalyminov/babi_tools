@@ -51,7 +51,7 @@ def make_tasks(in_dialogues, in_dst_root, dataset_filename):
         start_dialogue_index += dialogues_per_worker
         tasks.append((
             os.path.join(CONFIG['tmp_folder'], worker_filename),
-            os.path.join(in_dst_root, dataset_filename)
+            os.path.join(in_dst_root, worker_filename)
         ))
     return tasks
 
@@ -78,3 +78,4 @@ if __name__ == '__main__':
         )
         exit()
     process_corpus(sys.argv[1], sys.argv[2])
+
