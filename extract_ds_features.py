@@ -82,7 +82,7 @@ def group_partial_results(in_root):
         files_map[dataset + ext].append((int(start_dialogue), filename))
     for dataset, files in files_map.iteritems():
         with open(os.path.join(in_root, dataset), 'w') as dataset_out:
-            for filename in sorted(files, key=itemgetter(0)):
+            for start_dialogue, filename in sorted(files, key=itemgetter(0)):
                 with open(os.path.join(in_root, filename)) as dataset_in:
                     print >>dataset_out, dataset_in.read()
 
