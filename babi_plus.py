@@ -25,6 +25,16 @@ def apply_replacements(in_template, in_slots_map):
     return result
 
 
+def get_enclosing_phrase(in_tokens, in_token_index):
+    phrase_begin, phrase_end = in_token_index, in_token_index
+
+    while 0 < phrase_begin and in_tokens[phrase_begin - 1] in ['with', 'for', 'in', 'a']:
+        phrase_begin -= 1
+    while phrase_end < len(in_tokens) - 1 and in_tokens[phrase_end + 1] in ['cuisine', 'food', 'people', 'price', 'range']:
+        phrase_end += 1
+    return phrase_begin, phrase_end
+
+
 def perform_action(in_action, in_dialog, in_token_coordinates, in_slot_values):
     utterance_index, token_index = in_token_coordinates
     word = in_dialog[utterance_index]['text'][token_index]
@@ -41,6 +51,30 @@ def perform_action(in_action, in_dialog, in_token_coordinates, in_slot_values):
                 '$correct_value': word
             }
             in_dialog[utterance_index]['text'][token_index:token_index + 1] = apply_replacements(
+                action_outcome,
+                replacement_map
+            ).split()
+    if in_action == 'correct_long_distance':
+        phrase_begin, phrase_end = get_enclosing_phrase(
+            in_dialog[utterance_index]['text'],
+            token_index
+        )
+        if word in in_slot_values:
+            correct_phrase = ' '.join(
+                in_dialog[utterance_index]['text'][phrase_begin: phrase_end + 1]
+            )
+            incorrect_phrase = in_dialog[utterance_index]['text'][phrase_begin: phrase_end + 1]
+            incorrect_phrase[token_index - phrase_begin] = np.random.choice([
+                value
+                for value in in_slot_values
+                if value != word
+            ])
+            incorrect_phrase = ' '.join(incorrect_phrase)
+            replacement_map = {
+                '$incorrect_phrase': incorrect_phrase,
+                '$correct_phrase': correct_phrase
+            }
+            in_dialog[utterance_index]['text'][phrase_begin:phrase_end + 1] = apply_replacements(
                 action_outcome,
                 replacement_map
             ).split()
