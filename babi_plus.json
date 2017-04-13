@@ -39,7 +39,7 @@
     }
   },
   "action_templates": {
-    "hesitate": ["uhm $token", "like $token", "you know $token", "well $token"],
+    "hesitate": ["uhm $token", "like $token", "well $token"],
     "correct": [
       "$incorrect_value sorry $correct_value",
       "$incorrect_value uhm sorry $correct_value",
