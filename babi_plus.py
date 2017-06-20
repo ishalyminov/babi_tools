@@ -1,5 +1,6 @@
 import json
 import sys
+from argparse import ArgumentParser
 from itertools import cycle
 from os import path, makedirs
 import random
@@ -324,18 +325,30 @@ def save_babi(in_dialogues, in_dst_root):
                 print >>task_out, make_dialogue_tsv(dialogue) + '\n\n'
 
 
+def configure_argument_parser():
+    parser = ArgumentParser(description='generate bAbI+ data')
+    parser.add_argument('babi_root', help='folder with bAbI Dialog tasks')
+    parser.add_argument('babi_plus_root', help='output folder')
+    parser.add_argument(
+        '--output_format',
+        default='babi',
+        help='format of output dialogues [babi/babble]'
+    )
+    parser.add_argument(
+        '--result_size',
+        type=int,
+        default=None,
+        help='sie of generated dataset [default=input dataset size]'
+    )
+
+    return parser
+
+
 if __name__ == '__main__':
-    if len(sys.argv) != 4:
-        print 'Usage: {} ' \
-            '<original bAbI root> <result root> ' \
-            '<output format=babi/babble> [result size=original size]'.format(
-            path.basename(__file__)
-        )
-        exit()
+    parser = configure_argument_parser()
+    args = parser.parse_args()
     init()
-    source, destination, output_format = sys.argv[1:4]
-    result_size = None if len(sys.argv) != 5 else int(sys.argv[4])
-    babi_plus_dialogues = plus_dataset(source, result_size)
-    save_function = locals()['save_' + output_format]
-    save_function(babi_plus_dialogues, destination)
+    babi_plus_dialogues = plus_dataset(args.babi_root, args.result_size)
+    save_function = locals()['save_' + args.output_format]
+    save_function(babi_plus_dialogues, args.babi_plus_root)
     print_stats()
