@@ -1,5 +1,6 @@
 import json
 import sys
+from itertools import cycle
 from os import path, makedirs
 import random
 from collections import defaultdict
@@ -28,9 +29,20 @@ def apply_replacements(in_template, in_slots_map):
 def get_enclosing_phrase(in_tokens, in_token_index):
     phrase_begin, phrase_end = in_token_index, in_token_index
 
-    while 0 < phrase_begin and in_tokens[phrase_begin - 1] in ['with', 'for', 'in', 'a']:
+    while 0 < phrase_begin and in_tokens[phrase_begin - 1] in [
+        'with',
+        'for',
+        'in',
+        'a'
+    ]:
         phrase_begin -= 1
-    while phrase_end < len(in_tokens) - 1 and in_tokens[phrase_end + 1] in ['cuisine', 'food', 'people', 'price', 'range']:
+    while phrase_end < len(in_tokens) - 1 and in_tokens[phrase_end + 1] in [
+        'cuisine',
+        'food',
+        'people',
+        'price',
+        'range'
+    ]:
         phrase_end += 1
     return phrase_begin, phrase_end
 
@@ -156,7 +168,7 @@ def calculate_action_probabilities(
 
 
 def init():
-    global CONFIG, ACTION_LIST, ACTION_PROBABILITIES
+    global CONFIG, ACTION_LIST
     with open(CONFIG_FILE) as actions_in:
         CONFIG = json.load(actions_in)
     ACTION_LIST = sorted(CONFIG['action_templates'].keys())
@@ -209,7 +221,7 @@ def augment_dialogue(in_dialogue, in_slot_values):
             utterance['text'],
             slot_values_flat
         )
-        if set(transformations) != set(['NULL']):
+        if set(transformations) != {'NULL'}:
             utterances_modified += 1
         for transformation in transformations:
             action_stats[transformation] += 1
@@ -245,7 +257,7 @@ def augment_dialogue(in_dialogue, in_slot_values):
     return tokenized_dialogue
 
 
-def plus_dataset(in_src_root):
+def plus_dataset(in_src_root, in_result_size):
     dataset_files = get_files_list(in_src_root, 'task1-API-calls')
     babi_files = [(filename, read_task(filename)) for filename in dataset_files]
     full_babi = reduce(
@@ -255,8 +267,9 @@ def plus_dataset(in_src_root):
     )
     slots_map = extract_slot_values(full_babi)
     babi_plus = defaultdict(lambda: [])
+    result_size = in_result_size if in_result_size else len(babi_files)
     for task_name, task in babi_files:
-        for dialogue in task:
+        for dialogue_index, dialogue in zip(xrange(result_size), cycle(task)):
             babi_plus[task_name].append(
                 augment_dialogue(dialogue, slots_map.values())
             )
@@ -313,13 +326,16 @@ def save_babi(in_dialogues, in_dst_root):
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        print 'Usage: {} <original bAbI root> <result root> <output format=babi/babble>'.format(
+        print 'Usage: {} ' \
+            '<original bAbI root> <result root> ' \
+            '<output format=babi/babble> [result size=original size]'.format(
             path.basename(__file__)
         )
         exit()
     init()
     source, destination, output_format = sys.argv[1:4]
-    babi_plus_dialogues = plus_dataset(source)
+    result_size = None if len(sys.argv) != 5 else int(sys.argv[4])
+    babi_plus_dialogues = plus_dataset(source, result_size)
     save_function = locals()['save_' + output_format]
     save_function(babi_plus_dialogues, destination)
     print_stats()
