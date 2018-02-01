@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 
 def main(in_src_file, in_dst_file):
@@ -15,6 +16,7 @@ def main(in_src_file, in_dst_file):
             for turn, index in enumerate(xrange(0, len(dialogue) - 2, 2)):
                 usr, sys = dialogue[index: index + 2]
                 print >>dialogues_out, '{} {}\t{}'.format(turn + 1, usr, sys)
+            print >>dialogues_out, ''
 
 
 if __name__ == '__main__':

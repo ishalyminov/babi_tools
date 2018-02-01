@@ -338,7 +338,7 @@ def configure_argument_parser():
         '--result_size',
         type=int,
         default=None,
-        help='sie of generated dataset [default=input dataset size]'
+        help='size of generated dataset [default=input dataset size]'
     )
 
     return parser
