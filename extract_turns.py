@@ -1,4 +1,5 @@
 from collections import defaultdict
+import argparse
 
 import numpy as np
 
@@ -13,7 +14,7 @@ def main(in_root, in_agent, filter_outliers=False):
             if turn['agent'] == in_agent:
                 turns.append(turn['text'])
                 turns_freq_dict[turn['text']] += 1
-    frequency_threshold = np.percentile(turns_freq_dict, 95)
+    frequency_threshold = np.percentile(turns_freq_dict.values(), 95)
     result = [turn for turn in turns if turns_freq_dict[turn] < frequency_threshold]
     for turn in result:
         print turn
@@ -23,7 +24,7 @@ def build_argument_parser():
     result = argparse.ArgumentParser()
     result.add_argument('input_file', help='bAbI Dialog tasks folder')
     result.add_argument('agent')
-    result.add_argument('--filter_outliers', action=store_true)
+    result.add_argument('--filter_outliers', action='store_true')
     return result
 
 

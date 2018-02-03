@@ -25,8 +25,12 @@ def read_task(in_file_name):
         ))
         for line in dialog:
             line = re.sub('^\d+\s', '', line)
-            user_turn, system_turn = line.split('\t')
-            result[-1][1].append({'agent': 'user', 'text': user_turn})
+            turns = line.split('\t')
+            if len(turns) == 1:
+               system_turn = turns[0]
+            if len(turns) == 2:
+               user_turn, system_turn = turns
+               result[-1][1].append({'agent': 'user', 'text': user_turn})
             result[-1][1].append({'agent': 'system', 'text': system_turn})
     return filter(lambda x: len(x[1]), result)
 
