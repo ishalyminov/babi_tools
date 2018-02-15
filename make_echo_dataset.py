@@ -51,4 +51,4 @@ def build_argument_parser():
 if __name__ == '__main__':
     parser = build_argument_parser()
     args = parser.parse_args()
-    main(args.babi_folder)
+    main(args.babi_folder, args.result_folder, args.trainset_ratio)

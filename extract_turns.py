@@ -16,9 +16,7 @@ def main(in_root, in_agent, filter_outliers=False):
                 turns_freq_dict[turn['text']] += 1
     frequency_threshold = np.percentile(turns_freq_dict.values(), 95)
     result = [turn for turn in turns if turns_freq_dict[turn] < frequency_threshold]
-    for turn in result:
-        print turn
-
+    return result
 
 def build_argument_parser():
     result = argparse.ArgumentParser()
