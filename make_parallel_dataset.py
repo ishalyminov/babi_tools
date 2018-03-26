@@ -31,8 +31,8 @@ def save_seq2seq(in_utterance_pairs, in_output_folder):
 
 
 def main(in_babi, in_babi_plus, in_result_folder, in_output_format):
-    babi_files = [os.path.join(in_babi, filename) for filename in os.listdir(in_babi)]
-    babi_plus_files = [os.path.join(in_babi_plus, filename) for filename in os.listdir(in_babi)]
+    babi_files = get_files_list(in_babi, 'task1-API-calls')
+    babi_plus_files = get_files_list(in_babi_plus, 'task1-API-calls')
 
     if not os.path.exists(in_result_folder):
         os.makedirs(in_result_folder)

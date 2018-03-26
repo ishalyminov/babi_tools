@@ -140,11 +140,9 @@ def fix_data(in_utterance):
     return in_utterance
 
 
-def calculate_action_probabilities(
-    in_action_weights,
-    in_action_weight_mask,
-    in_action_limits
-):
+def calculate_action_probabilities(in_action_weights,
+                                   in_action_weight_mask,
+                                   in_action_limits):
     limits = dict(in_action_limits)
     for action in limits:
         limits[action] = float(0.0 < limits[action])
@@ -162,15 +160,13 @@ def calculate_action_probabilities(
         for action in action_weights_masked[case]:
             action_weights_masked[case][action] /= sum_masked_weight
         assert abs(sum(action_weights_masked[case].values()) - 1.0) < 1e-7
-    return {
-        case: [weight_map[action] for action in ACTION_LIST]
-        for case, weight_map in action_weights_masked.iteritems()
-    }
+    return {case: [weight_map[action] for action in ACTION_LIST]
+            for case, weight_map in action_weights_masked.iteritems()}
 
 
-def init():
+def init(in_config_file):
     global CONFIG, ACTION_LIST
-    with open(CONFIG_FILE) as actions_in:
+    with open(in_config_file) as actions_in:
         CONFIG = json.load(actions_in)
     ACTION_LIST = sorted(CONFIG['action_templates'].keys())
 
@@ -261,19 +257,16 @@ def augment_dialogue(in_dialogue, in_slot_values):
 def plus_dataset(in_src_root, in_result_size):
     dataset_files = get_files_list(in_src_root, 'task1-API-calls')
     babi_files = [(filename, read_task(filename)) for filename in dataset_files]
-    full_babi = reduce(
-        lambda x, y: x + y[1],
-        babi_files,
-        []
-    )
+    full_babi = reduce(lambda x, y: x + y[1],
+                       babi_files,
+                       [])
     slots_map = extract_slot_values(full_babi)
     babi_plus = defaultdict(lambda: [])
-    result_size = in_result_size if in_result_size else len(babi_files)
+
     for task_name, task in babi_files:
+        result_size = in_result_size if in_result_size else len(task)
         for dialogue_index, dialogue in zip(xrange(result_size), cycle(task)):
-            babi_plus[task_name].append(
-                augment_dialogue(dialogue, slots_map.values())
-            )
+            babi_plus[task_name].append(augment_dialogue(dialogue, slots_map.values()))
     return babi_plus
 
 
@@ -329,25 +322,21 @@ def configure_argument_parser():
     parser = ArgumentParser(description='generate bAbI+ data')
     parser.add_argument('babi_root', help='folder with bAbI Dialog tasks')
     parser.add_argument('babi_plus_root', help='output folder')
-    parser.add_argument(
-        '--output_format',
-        default='babi',
-        help='format of output dialogues [babi/babble]'
-    )
-    parser.add_argument(
-        '--result_size',
-        type=int,
-        default=None,
-        help='size of generated dataset [default=input dataset size]'
-    )
-
+    parser.add_argument('--output_format',
+                        default='babi',
+                        help='format of output dialogues [babi/babble]')
+    parser.add_argument('--result_size',
+                        type=int,
+                        default=None,
+                        help='size of generated dataset [default=input dataset size]')
+    parser.add_argument('--config', default=CONFIG_FILE)
     return parser
 
 
 if __name__ == '__main__':
     parser = configure_argument_parser()
     args = parser.parse_args()
-    init()
+    init(args.config)
     babi_plus_dialogues = plus_dataset(args.babi_root, args.result_size)
     save_function = locals()['save_' + args.output_format]
     save_function(babi_plus_dialogues, args.babi_plus_root)

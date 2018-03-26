@@ -39,17 +39,17 @@
     }
   },
   "action_templates": {
-    "hesitate": ["uhm $token", "well $token"],
+    "hesitate": ["um $token", "well $token"],
     "correct": [
       "$incorrect_value sorry $correct_value",
-      "$incorrect_value uhm sorry $correct_value",
+      "$incorrect_value um sorry $correct_value",
       "$incorrect_value oh no $correct_value",
       "$incorrect_value no sorry $correct_value",
       "$incorrect_value no $correct_value"
     ],
     "correct_long_distance": [
       "$incorrect_phrase sorry $correct_phrase",
-      "$incorrect_phrase uhm sorry $correct_phrase",
+      "$incorrect_phrase um sorry $correct_phrase",
       "$incorrect_phrase oh no $correct_phrase",
       "$incorrect_phrase no sorry $correct_phrase",
       "$incorrect_phrase no $correct_phrase"
@@ -68,7 +68,7 @@
     ],
     "restart": [
         "$token sorry yeah $utterance_from_beginning",
-        "$token uhm yeah $utterance_from_beginning"
+        "$token um yeah $utterance_from_beginning"
       ],
     "NULL": []
   }

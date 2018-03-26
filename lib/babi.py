@@ -79,8 +79,11 @@ def load_babble_dataset(in_root):
 def extract_slot_values(in_dialogues):
     result = defaultdict(lambda: set([]))
     for dialogue_name, dialogue in in_dialogues:
-        slot_values = dialogue[-1]['text'].split()[1:]
-        [result[index].add(value) for index, value in enumerate(slot_values)]
+        for turn in dialogue:
+            if not turn['text'].startswith('api_call'):
+                continue
+            slot_values = turn['text'].split()[1:]
+            [result[index].add(value) for index, value in enumerate(slot_values)]
     return result
 
 
