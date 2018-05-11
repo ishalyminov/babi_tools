@@ -30,17 +30,17 @@ def tag_utterance(in_utterance, in_slot_values, in_action_templates):
         disfluent_phrase_buffer_extended = disfluent_phrase_buffer + [token]
         if full_match(disfluent_phrase_buffer, in_action_templates) and not partial_match(
                 disfluent_phrase_buffer_extended, in_action_templates):
-            tags += ['f'] * len(fluent_phrase_buffer)
-            tags += ['e'] * len(disfluent_phrase_buffer)
+            tags += ['<f>'] * len(fluent_phrase_buffer)
+            tags += ['<e>'] * len(disfluent_phrase_buffer)
             if full_match(disfluent_phrase_buffer, in_action_templates) in ['correct', 'restart',
                                                                          'correct_long_distance']:
                 if token in fluent_phrase_buffer:
                     repair_tokens_number = len(fluent_phrase_buffer) - fluent_phrase_buffer.index(
                         token) + len(disfluent_phrase_buffer)
-                    repair_tags.append('rm-{}'.format(repair_tokens_number))
+                    repair_tags.append('<rm-{}>'.format(repair_tokens_number))
                     repair.append(token)
                 else:
-                    tags.append('f')
+                    tags.append('<f>')
             else:
                 fluent_phrase_buffer = []
             disfluent_phrase_buffer = []
@@ -52,8 +52,8 @@ def tag_utterance(in_utterance, in_slot_values, in_action_templates):
     if len(repair):
         tags += repair_tags
     else:
-        tags += ['f'] * len(fluent_phrase_buffer)
-    tags += ['e'] * len(disfluent_phrase_buffer)
+        tags += ['<f>'] * len(fluent_phrase_buffer)
+    tags += ['<e>'] * len(disfluent_phrase_buffer)
 
     return disfluent_tokens_original, tags
 
