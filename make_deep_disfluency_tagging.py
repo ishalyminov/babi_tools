@@ -15,46 +15,12 @@ def tag_utterance(in_utterance, in_slot_values, in_action_templates):
     disfluent_tokens_original = in_utterance.split()
     disfluent_tokens = ['<value>' if token in in_slot_values else token
                         for token in disfluent_tokens_original]
-
     for token in disfluent_tokens:
-        if len(repair):
-            if ' '.join(repair + [token]) in ' '.join(fluent_phrase_buffer):
-                repair.append(token)
-                repair_tags.append('rp')
-                continue
-            else:
-                repair = []
-                tags += repair_tags
-                repair_tags = []
-                fluent_phrase_buffer = []
-        disfluent_phrase_buffer_extended = disfluent_phrase_buffer + [token]
-        if full_match(disfluent_phrase_buffer, in_action_templates) and not partial_match(
-                disfluent_phrase_buffer_extended, in_action_templates):
-            tags += ['<f>'] * len(fluent_phrase_buffer)
-            tags += ['<e>'] * len(disfluent_phrase_buffer)
-            if full_match(disfluent_phrase_buffer, in_action_templates) in ['correct', 'restart',
-                                                                         'correct_long_distance']:
-                if token in fluent_phrase_buffer:
-                    repair_tokens_number = len(fluent_phrase_buffer) - fluent_phrase_buffer.index(
-                        token) + len(disfluent_phrase_buffer)
-                    repair_tags.append('<rm-{}>'.format(repair_tokens_number))
-                    repair.append(token)
-                else:
-                    tags.append('<f>')
-            else:
-                fluent_phrase_buffer = []
-            disfluent_phrase_buffer = []
-        elif partial_match(disfluent_phrase_buffer_extended, in_action_templates):
-            disfluent_phrase_buffer = disfluent_phrase_buffer_extended
+        if full_match([token], in_action_templates) == 'hesitate':
+            tags.append('<e/>')
         else:
-            fluent_phrase_buffer.append(token)
-
-    if len(repair):
-        tags += repair_tags
-    else:
-        tags += ['<f>'] * len(fluent_phrase_buffer)
-    tags += ['<e>'] * len(disfluent_phrase_buffer)
-
+            tags.append('<f/>')
+    assert len(disfluent_tokens_original) == len(tags)
     return disfluent_tokens_original, tags
 
 
@@ -70,12 +36,12 @@ def partial_match(in_buffer, in_templates):
 
 def full_match(in_buffer, in_templates):
     if not len(in_buffer):
-        return False
+        return None
     for key, templates in in_templates.iteritems():
         for template in templates:
             if template == in_buffer:
                 return key
-    return False
+    return None
 
 
 def collect_babi_slot_values(in_babi_root):
