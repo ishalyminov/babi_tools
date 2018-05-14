@@ -8,7 +8,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from lib.babi import extract_slot_values, get_files_list, read_task
+from lib.babi import extract_slot_values, get_files_list, read_task, get_enclosing_phrase
 
 random.seed(273)
 np.random.seed(273)
@@ -25,27 +25,6 @@ def apply_replacements(in_template, in_slots_map):
     for slot_name, slot_value in in_slots_map.iteritems():
         result = result.replace(slot_name, slot_value)
     return result
-
-
-def get_enclosing_phrase(in_tokens, in_token_index):
-    phrase_begin, phrase_end = in_token_index, in_token_index
-
-    while 0 < phrase_begin and in_tokens[phrase_begin - 1] in [
-        'with',
-        'for',
-        'in',
-        'a'
-    ]:
-        phrase_begin -= 1
-    while phrase_end < len(in_tokens) - 1 and in_tokens[phrase_end + 1] in [
-        'cuisine',
-        'food',
-        'people',
-        'price',
-        'range'
-    ]:
-        phrase_end += 1
-    return phrase_begin, phrase_end
 
 
 def perform_action(in_action, in_dialog, in_token_coordinates, in_slot_values):

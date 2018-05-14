@@ -87,6 +87,41 @@ def extract_slot_values(in_dialogues):
     return result
 
 
+def get_enclosing_phrase(in_tokens, in_token_index):
+    phrase_begin, phrase_end = in_token_index, in_token_index
+
+    while 0 < phrase_begin and in_tokens[phrase_begin - 1] in [
+        'with',
+        'for',
+        'in',
+        'a'
+    ]:
+        phrase_begin -= 1
+    while phrase_end < len(in_tokens) - 1 and in_tokens[phrase_end + 1] in [
+        'cuisine',
+        'food',
+        'people',
+        'price',
+        'range'
+    ]:
+        phrase_end += 1
+    return phrase_begin, phrase_end
+
+
+def extract_slot_value_pps(in_dialogues, in_slot_values, delexicalize=True):
+    result = set([])
+    for dialogue_name, dialogue in in_dialogues:
+        for turn in dialogue:
+            turn_tokens = turn['text'].split()
+            for token_idx, token in enumerate(turn_tokens):
+                if token in in_slot_values:
+                    pp_bounds = get_enclosing_phrase(turn_tokens, token_idx)
+                    pp = [token if token not in in_slot_values else '<value>'
+                          for token in turn_tokens[pp_bounds[0]: pp_bounds[1] + 1]]
+                    result.add(tuple(pp))
+    return result
+
+
 def save_csv(in_dialogue, out_stream):
     for turn in in_dialogue:
         print >>out_stream, '{}:\t{}'.format(turn['agent'], turn['text'])
