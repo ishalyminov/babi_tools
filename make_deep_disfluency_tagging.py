@@ -123,9 +123,9 @@ class SWDADisfluencyTagger(object):
         else:
             result += ['<f/>'] * len(in_interregnum_buffer)
         if 1 == len(in_repair_buffer):
-            result.append('<rm-{}/><rpSub/>'.format(len(in_interregnum_buffer) + 1))
+            result.append('<rm-{}/><rpEndSub/>'.format(len(in_interregnum_buffer) + 1))
         elif 1 < len(in_repair_buffer):
-            result.append('<rm-{}/>'.format(len(in_interregnum_buffer) + 1))
+            result.append('<rm-{}/><rpMid/>'.format(len(in_interregnum_buffer) + 1))
             for _ in xrange(len(in_repair_buffer) - 2):
                 result.append('<f/>')
             result.append('<rpEnd/>')
