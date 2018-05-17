@@ -2,7 +2,9 @@ import os
 import re
 from codecs import getreader
 from collections import deque, defaultdict
+from operator import itemgetter
 from os import path
+import nltk
 
 TASK_ID = 'task1-API-calls'
 DATASET_ORDERING = ['trn', 'dev', 'tst', 'tst-OOV']
@@ -30,8 +32,12 @@ def read_task(in_file_name):
                system_turn = turns[0]
             if len(turns) == 2:
                user_turn, system_turn = turns
-               result[-1][1].append({'agent': 'user', 'text': user_turn})
-            result[-1][1].append({'agent': 'system', 'text': system_turn})
+               result[-1][1].append({'agent': 'user',
+                                     'text': user_turn,
+                                     'pos': map(itemgetter(1), nltk.pos_tag(user_turn.split()))})
+            result[-1][1].append({'agent': 'system',
+                                  'text': system_turn,
+                                  'pos': map(itemgetter(1), nltk.pos_tag(system_turn.split()))})
     return filter(lambda x: len(x[1]), result)
 
 
@@ -84,41 +90,6 @@ def extract_slot_values(in_dialogues):
                 continue
             slot_values = turn['text'].split()[1:]
             [result[index].add(value) for index, value in enumerate(slot_values)]
-    return result
-
-
-def get_enclosing_phrase(in_tokens, in_token_index):
-    phrase_begin, phrase_end = in_token_index, in_token_index
-
-    while 0 < phrase_begin and in_tokens[phrase_begin - 1] in [
-        'with',
-        'for',
-        'in',
-        'a'
-    ]:
-        phrase_begin -= 1
-    while phrase_end < len(in_tokens) - 1 and in_tokens[phrase_end + 1] in [
-        'cuisine',
-        'food',
-        'people',
-        'price',
-        'range'
-    ]:
-        phrase_end += 1
-    return phrase_begin, phrase_end
-
-
-def extract_slot_value_pps(in_dialogues, in_slot_values, delexicalize=True):
-    result = set([])
-    for dialogue_name, dialogue in in_dialogues:
-        for turn in dialogue:
-            turn_tokens = turn['text'].split()
-            for token_idx, token in enumerate(turn_tokens):
-                if token in in_slot_values:
-                    pp_bounds = get_enclosing_phrase(turn_tokens, token_idx)
-                    pp = [token if token not in in_slot_values else '<value>'
-                          for token in turn_tokens[pp_bounds[0]: pp_bounds[1] + 1]]
-                    result.add(tuple(pp))
     return result
 
 

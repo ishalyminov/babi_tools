@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-from collections import defaultdict
 from itertools import cycle
 
 from babi_plus import (read_task,
@@ -7,7 +6,8 @@ from babi_plus import (read_task,
                        extract_slot_values,
                        print_stats,
                        make_dialogue_tsv,
-                       augment_dialogue)
+                       augment_dialogue,
+                       DEFAULT_CONFIG_FILE)
 
 
 def configure_argument_parser():
@@ -35,7 +35,7 @@ def save_dataset(in_dialogues, in_dst_filename):
 if __name__ == '__main__':
     parser = configure_argument_parser()
     args = parser.parse_args()
-    init()
+    init(DEFAULT_CONFIG_FILE)
     babi_plus_dialogues = process_file(args.src_file)
     save_dataset(babi_plus_dialogues, args.dst_file)
     print_stats()

@@ -1,5 +1,4 @@
 import json
-import sys
 from argparse import ArgumentParser
 from itertools import cycle
 from os import path, makedirs
@@ -13,18 +12,11 @@ from lib.babi import extract_slot_values, get_files_list, read_task, get_enclosi
 random.seed(273)
 np.random.seed(273)
 
-CONFIG_FILE = 'babi_plus.json'
+DEFAULT_CONFIG_FILE = 'babi_plus.json'
 CONFIG = None
 
 ACTION_LIST = None
 STATS = defaultdict(lambda: 0)
-
-
-def apply_replacements(in_template, in_slots_map):
-    result = in_template
-    for slot_name, slot_value in in_slots_map.iteritems():
-        result = result.replace(slot_name, slot_value)
-    return result
 
 
 def perform_action(in_action, in_dialog, in_token_coordinates, in_slot_values):
@@ -46,6 +38,19 @@ def perform_action(in_action, in_dialog, in_token_coordinates, in_slot_values):
                 action_outcome,
                 replacement_map
             ).split()
+    # can only be taken at the PP start
+    if in_action == 'pp_restart':
+        pp = word
+        if in_dialog[utterance_index]['pos'][token_index + 1] == 'DT':
+            pp += ' ' + in_dialog[utterance_index]['text'][token_index + 1]
+        replacement_map = {
+            '$token': word,
+            '$pp': pp
+        }
+        in_dialog[utterance_index]['text'][token_index:token_index + 1] = apply_replacements(
+                action_outcome,
+                replacement_map
+        ).split()
     if in_action == 'correct_long_distance':
         phrase_begin, phrase_end = get_enclosing_phrase(
             in_dialog[utterance_index]['text'],
@@ -99,6 +104,7 @@ def perform_action(in_action, in_dialog, in_token_coordinates, in_slot_values):
             action_outcome,
             replacement_map
         ).split()
+        in_dialog[utterance_index]['tags'][token_index:token_index + 1] = ['<e/>' '<f/>']
     if in_action == 'restart':
         replacement_map = {
             '$token': word,
@@ -147,9 +153,9 @@ def calculate_action_probabilities(
     }
 
 
-def init():
+def init(in_config_file):
     global CONFIG, ACTION_LIST
-    with open(CONFIG_FILE) as actions_in:
+    with open(in_config_file) as actions_in:
         CONFIG = json.load(actions_in)
     ACTION_LIST = sorted(CONFIG['action_templates'].keys())
 
@@ -157,10 +163,15 @@ def init():
 def sample_transformations(in_utterance, in_slot_values):
     action_limits = dict(CONFIG['action_limits'])
 
-    token_types = map(
-        lambda x: 'slot_value' if x in in_slot_values else 'background_word',
-        in_utterance
-    )
+    token_types = []
+    for idx, (token, tag) in enumerate(zip(in_utterance['text'], in_utterance['pos'])):
+        if token in slot_values:
+            token_types.append('slot_value')
+        elif tag == 'IN':
+            token_types.append('pp_start')
+        else:
+            token_types.append('background_word')
+
     per_token_actions = []
     for token_type in token_types:
         action_probs = calculate_action_probabilities(
@@ -186,6 +197,7 @@ def augment_dialogue(in_dialogue, in_slot_values):
     dialogue_name, dialogue = in_dialogue
     tokenized_dialogue = []
     for utterance in dialogue:
+        utterance['tags'] = ['<f/>' for _ in xrange(len(utterance['text']))]
         tokenized_utterance = dict(utterance)
         tokenized_utterance['text'] = fix_data(utterance['text']).split()
         tokenized_dialogue.append(tokenized_utterance)
@@ -197,10 +209,7 @@ def augment_dialogue(in_dialogue, in_slot_values):
         utterance = tokenized_dialogue[utterance_index]
         if utterance_index % 2 == 1 or utterance['text'] == [u'<SILENCE>']:
             continue
-        transformations = sample_transformations(
-            utterance['text'],
-            slot_values_flat
-        )
+        transformations = sample_transformations(utterance, slot_values_flat)
         if set(transformations) != {'NULL'}:
             utterances_modified += 1
         for transformation in transformations:
@@ -319,6 +328,11 @@ def configure_argument_parser():
         default=None,
         help='size of generated dataset [default=input dataset size]'
     )
+    parser.add_argument(
+        '--config',
+        default=DEFAULT_CONFIG_FILE,
+        help='dicustom disfluency config (json file)'
+    )
 
     return parser
 
@@ -326,7 +340,7 @@ def configure_argument_parser():
 if __name__ == '__main__':
     parser = configure_argument_parser()
     args = parser.parse_args()
-    init()
+    init(args.config)
     task = read_task(args.babi_file)
     slot_values = extract_slot_values(task)
     task_name = path.basename(args.babi_file)

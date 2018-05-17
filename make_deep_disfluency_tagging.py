@@ -5,9 +5,9 @@ import json
 
 from lib.babi import get_files_list, read_task, extract_slot_values, extract_slot_value_pps
 
-UTTERANCES_TEST = [('i want a place with italian sorry spanish cuisine', ''),
+UTTERANCES_TEST = [('i i um i want a a place with italian sorry spanish cuisine', ''),
                    ('i want a place with italian oh no spanish cuisine', ''),
-                   ('i want a place with let me check italian cuisine', ''),
+                   ('i want a place with with let me check italian cuisine', ''),
                    ('i want a place with italian cuisine um sorry with spanish cuisine', ''),
                    ('i want um yeah i want a place with spanish cuisine', '')]
 
@@ -194,60 +194,6 @@ def configure_argument_parser():
     return parser
 
 
-def tag_utterance_old(in_utterance, in_slot_values, in_action_templates):
-    tags = []
-    fluent_phrase_buffer = []
-    slot_value_pp_buffer = []
-    disfluent_phrase_buffer = []
-    repair = []
-    repair_tags = []
-    utterance_tokens_original = in_utterance.split()
-    utterance_tokens = ['<value>' if token in in_slot_values else token
-                        for token in utterance_tokens_original]
-
-    for token in utterance_tokens:
-        if len(repair):
-            if ' '.join(repair + [token]) in ' '.join(fluent_phrase_buffer):
-                repair.append(token)
-                repair_tags.append('rp')
-                continue
-            else:
-                repair = []
-                tags += repair_tags
-                repair_tags = []
-                fluent_phrase_buffer = []
-        disfluent_phrase_buffer_extended = disfluent_phrase_buffer + [token]
-        if full_match(disfluent_phrase_buffer, in_action_templates) and not partial_match(
-                disfluent_phrase_buffer_extended, in_action_templates):
-            tags += ['<f/>'] * len(fluent_phrase_buffer)
-            tags += ['<e/>'] * len(disfluent_phrase_buffer)
-            if full_match(disfluent_phrase_buffer, in_action_templates) in ['correct',
-                                                                            'restart',
-                                                                            'correct_long_distance']:
-                if token in fluent_phrase_buffer:
-                    repair_tokens_number = len(fluent_phrase_buffer) - fluent_phrase_buffer.index(
-                        token) + len(disfluent_phrase_buffer)
-                    repair_tags.append('<rm-{}/>'.format(repair_tokens_number))
-                    repair.append(token)
-                else:
-                    tags.append('<f/>')
-            else:
-                fluent_phrase_buffer = []
-            disfluent_phrase_buffer = []
-        elif partial_match(disfluent_phrase_buffer_extended, in_action_templates):
-            disfluent_phrase_buffer = disfluent_phrase_buffer_extended
-        else:
-            fluent_phrase_buffer.append(token)
-
-    if len(repair):
-        tags += repair_tags
-    else:
-        tags += ['<f/>'] * len(fluent_phrase_buffer)
-    tags += ['<e/>'] * len(disfluent_phrase_buffer)
-
-    return utterance_tokens_original, tags
-
-
 def main():
     parser = configure_argument_parser()
     args = parser.parse_args()
@@ -263,7 +209,7 @@ def main():
     result_utterances, result_tags = [], []
     tagger = SWDADisfluencyTagger(slot_values, slot_value_pps, action_templates)
 
-    for idx, (utterance_disfluent, utterance_fluent) in dataset.iterrows():
+    for idx, (utterance_disfluent, utterance_fluent) in enumerate(UTTERANCES_TEST):  # dataset.iterrows():
         tags = tagger.tag_utterance(utterance_disfluent)
         print utterance_disfluent
         print tags

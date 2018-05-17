@@ -1,5 +1,4 @@
 import json
-import sys
 from argparse import ArgumentParser
 from itertools import cycle
 from os import path, makedirs
@@ -13,7 +12,7 @@ from lib.babi import extract_slot_values, get_files_list, read_task
 random.seed(273)
 np.random.seed(273)
 
-CONFIG_FILE = 'babi_plus.json'
+DEFAULT_CONFIG_FILE = 'babi_plus.json'
 CONFIG = None
 
 ACTION_LIST = None
@@ -25,27 +24,6 @@ def apply_replacements(in_template, in_slots_map):
     for slot_name, slot_value in in_slots_map.iteritems():
         result = result.replace(slot_name, slot_value)
     return result
-
-
-def get_enclosing_phrase(in_tokens, in_token_index):
-    phrase_begin, phrase_end = in_token_index, in_token_index
-
-    while 0 < phrase_begin and in_tokens[phrase_begin - 1] in [
-        'with',
-        'for',
-        'in',
-        'a'
-    ]:
-        phrase_begin -= 1
-    while phrase_end < len(in_tokens) - 1 and in_tokens[phrase_end + 1] in [
-        'cuisine',
-        'food',
-        'people',
-        'price',
-        'range'
-    ]:
-        phrase_end += 1
-    return phrase_begin, phrase_end
 
 
 def perform_action(in_action, in_dialog, in_token_coordinates, in_slot_values):
@@ -329,7 +307,7 @@ def configure_argument_parser():
                         type=int,
                         default=None,
                         help='size of generated dataset [default=input dataset size]')
-    parser.add_argument('--config', default=CONFIG_FILE)
+    parser.add_argument('--config', default=DEFAULT_CONFIG_FILE)
     return parser
 
 

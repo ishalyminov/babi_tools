@@ -1,0 +1,69 @@
+{
+  "action_limits": {
+    "hesitate": 2,
+    "correct": 2,
+    "restart": 1,
+    "selfcheck": 2,
+    "pp_restart": 2,
+    "NULL": 999999,
+    "GLOBAL": 2
+  },
+  "action_weights": {
+    "hesitate": 0,
+    "correct": 0,
+    "restart": 0,
+    "selfcheck": 0,
+    "pp_restart": 10,
+    "NULL": 30
+  },
+  "action_weight_mask": {
+    "background_word": {
+      "hesitate": 0,
+      "correct": 0,
+      "restart": 1,
+      "selfcheck": 1,
+      "pp_restart": 0,
+      "NULL": 1
+    },
+    "slot_value": {
+      "hesitate": 1,
+      "correct": 1,
+      "restart": 1,
+      "selfcheck": 1,
+      "pp_restart": 0,
+      "NULL": 1
+    },
+    "pp_start": {
+      "hesitate": 1,
+      "correct": 1,
+      "restart": 1,
+      "selfcheck": 1,
+      "pp_restart": 1,
+      "NULL": 1
+    }
+  },
+  "action_templates": {
+    "hesitate": [
+      "um $token",
+      "well $token",
+      "um like $token",
+      "you know $token"
+    ],
+    "correct": [
+      "$correct_value $correct_value",
+      "$correct_value um $correct_value",
+      "$correct_value um yeah $correct_value"
+    ],
+    "restart": [
+        "$token um $utterance_from_beginning"
+    ],
+    "pp_restart": [
+      "$pp um $pp",
+      "$token $token um $pp",
+      "$token $token well $pp",
+      "$pp well $pp",
+      "$pp $pp"
+    ],
+    "NULL": []
+  }
+}
