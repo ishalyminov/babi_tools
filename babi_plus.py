@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from lib.babi import extract_slot_values, get_files_list, read_task
+from lib.babi import extract_slot_values, get_files_list, read_task, get_enclosing_phrase
 
 random.seed(273)
 np.random.seed(273)

@@ -5,7 +5,9 @@ import json
 
 from lib.babi import get_files_list, read_task, extract_slot_values, extract_slot_value_pps
 
-UTTERANCES_TEST = [('i i um i want a a place with italian sorry spanish cuisine', ''),
+UTTERANCES_TEST = [('can you book a table in a expensive price range sorry in a cheap price range in rome no in madrid for four people with italian cuisine', ''),
+                   ('for two people no for six people please', ''),
+                   ('i i um i want a a place with italian sorry spanish cuisine', ''),
                    ('i want a place with italian oh no spanish cuisine', ''),
                    ('i want a place with with let me check italian cuisine', ''),
                    ('i want a place with italian cuisine um sorry with spanish cuisine', ''),
@@ -15,7 +17,8 @@ UTTERANCES_TEST = [('i i um i want a a place with italian sorry spanish cuisine'
 class SWDADisfluencyTagger(object):
     def __init__(self, in_slot_values, in_slot_value_phrases, in_action_templates):
         self.slot_values = in_slot_values
-        self.slot_value_phrases = in_slot_value_phrases
+        self.slot_value_phrases = set([tuple(self.delexicalize_slot_values(phrase))
+                                       for phrase in in_slot_value_phrases])
         self.action_templates = []
         for key, templates in in_action_templates.iteritems():
             self.action_templates += map(tuple, templates)
@@ -76,9 +79,15 @@ class SWDADisfluencyTagger(object):
                     interregnum_buffer.append(token)
                     self.state = 'INSIDE_INTERREGNUM'
                 else:
-                    self.state = 'FLUENT'
+                    tags += self.flush_tags(fluent_buffer,
+                                                reparandum_buffer,
+                                                interregnum_buffer,
+                                                repair_buffer)
+                    fluent_buffer = [token]
                     reparandum_buffer = []
-                    fluent_buffer.append(token)
+                    interregnum_buffer = []
+                    repair_buffer = []
+                    self.state = 'FLUENT'
                     if matches_template_prefix(reparandum_buffer + [token],
                                                self.slot_value_phrases):
                         reparandum_buffer.append(token)
@@ -98,6 +107,10 @@ class SWDADisfluencyTagger(object):
                     if matches_template_prefix([token], self.action_templates):
                         interregnum_buffer.append(token)
                         self.state = 'INSIDE_INTERREGNUM'
+                    elif matches_template_prefix(reparandum_buffer + [token], self.slot_value_phrases):
+                        reparandum_buffer.append(token)
+                        fluent_buffer.append(token)
+                        self.state = 'INSIDE_REPARANDUM'
                     else:
                         fluent_buffer = [token]
                         self.state = 'FLUENT'
@@ -190,8 +203,20 @@ def configure_argument_parser():
     parser.add_argument('babi_folder',
                         help='original bAbI Dialog dataset root',
                         default='dialog-bAbI-tasks')
-
+    parser.add_argument('--test', default=False, action='store_true')
     return parser
+
+
+def test(in_config, in_babi_folder):
+    slot_values = collect_babi_slot_values(in_babi_folder)
+    slot_value_pps = collect_babi_slot_value_pps(in_babi_folder, slot_values)
+    action_templates = get_action_templates(in_config)
+
+    tagger = SWDADisfluencyTagger(slot_values, slot_value_pps, action_templates)
+    for idx, (utterance_disfluent, utterance_fluent) in enumerate(UTTERANCES_TEST):
+        tags = tagger.tag_utterance(utterance_disfluent)
+        print utterance_disfluent
+        print ' '.join(tags)
 
 
 def main():
@@ -201,6 +226,10 @@ def main():
     with open(args.config_file) as config_in:
         config = json.load(config_in)
 
+    if args.test:
+        test(config, args.babi_folder)
+        return
+
     dataset = pd.read_csv(args.parallel_file, delimiter=';')
     slot_values = collect_babi_slot_values(args.babi_folder)
     slot_value_pps = collect_babi_slot_value_pps(args.babi_folder, slot_values)
@@ -209,10 +238,8 @@ def main():
     result_utterances, result_tags = [], []
     tagger = SWDADisfluencyTagger(slot_values, slot_value_pps, action_templates)
 
-    for idx, (utterance_disfluent, utterance_fluent) in enumerate(UTTERANCES_TEST):  # dataset.iterrows():
+    for idx, (utterance_disfluent, utterance_fluent) in dataset.iterrows():
         tags = tagger.tag_utterance(utterance_disfluent)
-        print utterance_disfluent
-        print tags
         result_utterances.append(utterance_disfluent.split())
         result_tags.append(tags)
     result = pd.DataFrame({'utterance': result_utterances, 'tags': result_tags})
@@ -221,3 +248,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

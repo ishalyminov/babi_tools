@@ -211,16 +211,3 @@ def sample_transformations(in_utterance, in_slot_values, in_config):
         assert count <= in_config['action_limits'][action]
     return per_token_actions
 
-
-def get_enclosing_phrase(in_tokens, in_token_index):
-    phrase_begin, phrase_end = in_token_index, in_token_index
-
-    while 0 < phrase_begin and in_tokens[phrase_begin - 1] in ['with', 'for', 'in', 'a']:
-        phrase_begin -= 1
-    while phrase_end < len(in_tokens) - 1 and in_tokens[phrase_end + 1] in ['cuisine',
-                                                                            'food',
-                                                                            'people',
-                                                                            'price',
-                                                                            'range']:
-        phrase_end += 1
-    return phrase_begin, phrase_end

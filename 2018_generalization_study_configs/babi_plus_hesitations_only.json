@@ -9,16 +9,16 @@
     "GLOBAL": 2
   },
   "action_weights": {
-    "hesitate": 20,
+    "hesitate": 30,
     "correct": 0,
     "restart": 0,
     "selfcheck": 0,
     "pp_restart": 0,
-    "NULL": 30
+    "NULL": 70
   },
   "action_weight_mask": {
     "background_word": {
-      "hesitate": 0,
+      "hesitate": 1,
       "correct": 0,
       "restart": 1,
       "selfcheck": 1,
@@ -35,7 +35,7 @@
     },
     "pp_start": {
       "hesitate": 1,
-      "correct": 1,
+      "correct": 0,
       "restart": 1,
       "selfcheck": 1,
       "pp_restart": 1,

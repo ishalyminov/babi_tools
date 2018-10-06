@@ -175,7 +175,7 @@ def main(in_config, in_babi_file, in_result_file):
     for dialogue in babi_plus_dialogues:
         for turn in dialogue:
             if turn['agent'] == 'user':
-                utterances.append(turn['text'])
+                utterances.append(turn['text'].split())
                 tags.append(turn['tags'])
                 pos.append(turn['pos'])
     result = pd.DataFrame({'utterance': utterances, 'tags': tags, 'pos': pos})
