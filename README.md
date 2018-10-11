@@ -1,5 +1,6 @@
 # bAbI Tools
-Augmentation scripts for the bAbI Dialog Tasks dataset, as presented in the papers
+Augmentation scripts for the bAbI Dialog Tasks dataset, as presented in the following papers:
+
 "Bootstrapping incremental dialogue systems from minimal data: the
 generalisation power of dialogue grammars" by [Arash Eshghi](https://github.com/araesh), [Igor Shalyminov](https://github.com/ishalyminov), and [Oliver Lemon](https://github.com/olemon1) [[EMNLP 2017 paper]](http://aclweb.org/anthology/D17-1236)
 
